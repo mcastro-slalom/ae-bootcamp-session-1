@@ -98,6 +98,37 @@ describe('App Component', () => {
     });
   });
 
+  test('deletes an item', async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      rest.delete('/api/items/:id', (req, res, ctx) => {
+        const { id } = req.params;
+        if (id === '1') {
+          return res(ctx.status(200), ctx.json({ id: Number(id), message: 'Item deleted' }));
+        }
+        return res(ctx.status(404), ctx.json({ error: 'Item not found' }));
+      })
+    );
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Item 1')).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+    await act(async () => {
+      await user.click(deleteButtons[0]);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Test Item 1')).not.toBeInTheDocument();
+    });
+  });
+
   test('handles API error', async () => {
     // Override the default handler to simulate an error
     server.use(
